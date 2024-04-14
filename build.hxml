@@ -1,0 +1,5 @@
+-p src
+-m Main
+-L format
+# --neko main.n
+--cpp build/

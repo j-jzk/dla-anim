@@ -1,0 +1,4 @@
+.haxelib
+build/
+*.n
+output.png
