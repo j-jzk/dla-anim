@@ -20,6 +20,7 @@ class Pair<A, B> {
 class Grid {
     public var grid: Bytes;
     public var edgeLen: Int;
+    public var anim = new Apng();
 
     public function new(edgeLen: Int) {
         grid = Bytes.alloc(edgeLen * edgeLen);
@@ -32,6 +33,9 @@ class Grid {
     }
     function setPixelAt(x: Int, y: Int, val: Bool) {
         grid.set(x + y*edgeLen, val ? 255 : 0);
+    }
+    function setPixelValue(x: Int, y: Int, val: Int) {
+        grid.set(x + y*edgeLen, val);
     }
 
      /**
@@ -47,15 +51,24 @@ class Grid {
             throw "The algorithm will hang, set the target < 1";
         final pixelsToFill = Math.floor(edgeLen * edgeLen * target);
 
+        anim.init(edgeLen, edgeLen, pixelsToFill+1);
+        addAnimPixel(startX, startY);
+
         while (pixelsFilled < pixelsToFill) {
             final pixel = findFreePixel();
-            // trace('found free px: $pixel');
             while (!doesPixelNeighbor(pixel)) {
                 movePixelRandomly(pixel);
-                // trace('movin: $pixel');
             }
 
-            setPixelAt(pixel.x, pixel.y, true);
+            setPixelValue(
+                pixel.x,
+                pixel.y,
+                Math.ceil(255 * (1 - pixelsFilled/pixelsToFill)),
+            );
+
+            if (pixelsFilled % 15 == 0)
+                addAnimFrame();
+
             pixelsFilled++;
             trace('$pixelsFilled/$pixelsToFill');
         }
@@ -101,29 +114,28 @@ class Grid {
             return true;
         return false;
     }
+
+    private final oneWhitePixel = Bytes.ofHex("ff");
+    private function addAnimPixel(x: Int, y: Int) {
+        anim.addFrame(x, y, 1, 1, 1, oneWhitePixel);
+    }
+
+    private function addAnimFrame() {
+        anim.addFrame(0, 0, edgeLen, edgeLen, 1, grid, 9);
+    }
 }
 
-function exportToPng(g: Grid): PngData {
-    // final pngBytes = Bytes.alloc(g.grid.length * 4);
-    // for (i in 0..g.grid.length) {
-    //     if (Bytes.fastGet(g.grid, i) != 0)
-    //         pngBytes.setInt32(i*4, 0xffffffff)
-    //     else
-    //         pngBytes.setInt32(i*4, 0x000000ff);
-    // }
-    return PngTools.buildGrey(g.edgeLen, g.edgeLen, g.grid);
-}
+// function exportToPng(g: Grid): PngData {
+//     return PngTools.buildGrey(g.edgeLen, g.edgeLen, g.grid);
+// }
 
 class Main {
     static function main() {
-        trace("opening the file");
         final f = File.write(Sys.args()[0]);
-        trace("alloc grid");
         final g = new Grid(128);
-        trace("lets go");
-        g.runDLA(63, 63, 0.25);
+        g.runDLA(2, 2, 0.25);
 
-        new PngWriter(f).write(exportToPng(g));
+        new PngWriter(f).write(g.anim.finalize());
         f.close();        
     }
 }
