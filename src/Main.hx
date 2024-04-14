@@ -1,3 +1,4 @@
+import haxe.Json;
 import sys.io.File;
 import haxe.io.Bytes;
 import format.png.Data as PngData;
@@ -43,16 +44,17 @@ class Grid {
      * @param startY position of the starting pixel
      * @param target the target ratio of filled pixels.
      */
-    public function runDLA(startX: Int, startY: Int, target: Float) {
-        setPixelAt(startX, startY, true);
-        var pixelsFilled = 1;
+    public function runDLA(startPoints: List<Pair<Int,Int>>, target: Float) {
+        for (pt in startPoints)
+            setPixelAt(pt.x, pt.y, true);
+        var pixelsFilled = startPoints.length;
 
         if (target >= 1.0)
             throw "The algorithm will hang, set the target < 1";
         final pixelsToFill = Math.floor(edgeLen * edgeLen * target);
 
         anim.init(edgeLen, edgeLen, pixelsToFill+1);
-        addAnimPixel(startX, startY);
+        addAnimFrame();
 
         while (pixelsFilled < pixelsToFill) {
             final pixel = findFreePixel();
@@ -66,7 +68,7 @@ class Grid {
                 Math.ceil(255 * (1 - pixelsFilled/pixelsToFill)),
             );
 
-            if (pixelsFilled % 15 == 0)
+            if (pixelsFilled % 64 == 0)
                 addAnimFrame();
 
             pixelsFilled++;
@@ -132,8 +134,15 @@ class Grid {
 class Main {
     static function main() {
         final f = File.write(Sys.args()[0]);
-        final g = new Grid(128);
-        g.runDLA(2, 2, 0.25);
+        final g = new Grid(512);
+
+        final startingPts = new List();
+        final jsonPts: Array<Array<Int>> = Json.parse(Sys.args()[1]);
+        for (jsonPt in jsonPts) {
+            startingPts.add(new Pair<Int, Int>(jsonPt[0], jsonPt[1]));
+        }
+
+        g.runDLA(startingPts, 0.2);
 
         new PngWriter(f).write(g.anim.finalize());
         f.close();        
