@@ -1,5 +1,6 @@
 -p src
 -m Main
 -L format
+-L hxColorToolkit
 # --neko main.n
 --cpp build/

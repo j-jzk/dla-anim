@@ -4,6 +4,7 @@ import haxe.io.Bytes;
 import format.png.Data as PngData;
 import format.png.Writer as PngWriter;
 import format.png.Tools as PngTools;
+import hxColorToolkit.spaces.HSL;
 
 class Pair<A, B> {
     public var x: A;
@@ -16,6 +17,25 @@ class Pair<A, B> {
 
     public function toString(): String
         return '[$x, $y]';
+}
+
+/** Generates a nice color palette to use in the animation */
+function generatePalette(): Bytes {
+    final pal = Bytes.alloc(256 * 3);
+
+    for (index in 0...256) {
+        final color = new HSL(300 - index * 300 / 256, 75, 50).toRGB();
+        trace('palette #$color = ${color.red}/${color.green}/${color.blue} (hue ${index * 360 / 256})');
+        pal.set(index * 3 + 0, Std.int(color.red));
+        pal.set(index * 3 + 1, Std.int(color.green));
+        pal.set(index * 3 + 2, Std.int(color.blue));
+    }
+    // 0 should be black
+    pal.set(0, 0);
+    pal.set(1, 0);
+    pal.set(2, 0);
+
+    return pal;
 }
 
 class Grid {
@@ -53,7 +73,7 @@ class Grid {
             throw "The algorithm will hang, set the target < 1";
         final pixelsToFill = Math.floor(edgeLen * edgeLen * target);
 
-        anim.init(edgeLen, edgeLen, pixelsToFill+1);
+        anim.init(edgeLen, edgeLen, pixelsToFill+1, ColIndexed, generatePalette());
         addAnimFrame();
 
         while (pixelsFilled < pixelsToFill) {
@@ -134,7 +154,7 @@ class Grid {
 class Main {
     static function main() {
         final f = File.write(Sys.args()[0]);
-        final g = new Grid(512);
+        final g = new Grid(256);
 
         final startingPts = new List();
         final jsonPts: Array<Array<Int>> = Json.parse(Sys.args()[1]);

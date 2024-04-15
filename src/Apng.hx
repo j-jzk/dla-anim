@@ -41,6 +41,11 @@ typedef FrameControl = {
     blendOp: FctlBlend,
 };
 
+enum ColorType {
+    Grey;
+    RGB;
+}
+
 /**
  * Basic APNG tools, tailored to the needs of this project
  */
@@ -52,15 +57,18 @@ class Apng {
     //     chunks = new List();
     // }
 
-    public function init(width: Int, height: Int, numFrames: Int) {
+    public function init(width: Int, height: Int, numFrames: Int, colorScheme: Color, ?palette: Bytes) {
         chunks.add(CHeader({
             width: width,
             height: height,
             interlaced: false,
             colbits: 8,
-            color: ColGrey(false),
+            color: colorScheme,
         }));
         chunks.add(generateActl(numFrames, 1));
+
+        if (palette != null)
+            chunks.add(CPalette(palette));
 
         // add a black frame
         var black = Bytes.alloc(width * height);
@@ -70,7 +78,7 @@ class Apng {
     }
 
     private var seqNum = 0;
-    public function addFrame(x: Int, y: Int, width: Int, height: Int, durationMs: Int, data: Bytes, compLvl = 0) {
+    public function addFrame(x: Int, y: Int, width: Int, height: Int, durationMs: Int, data: Bytes, compLvl: Int = 0) {
         chunks.add(generateFctl({
             seqNum: seqNum++,
             width: width,
@@ -83,8 +91,42 @@ class Apng {
             blendOp: Source,
         }));
 
+        // final fdat = switch color {
+        //     case Grey: generateGreyData(width, height, data);
+        //     case RGB: generateRGBData(width, height, data);
+        // };
+        // fdat.setInt32BE(0, seqNum++);
+        chunks.add(generateFdat(seqNum++, generate1ByteData(width, height, data), compLvl));
+    }
+
+    /*
+    * Adapted from format - Haxe File Formats
+    *
+    * Copyright (c) 2008-2009, The Haxe Project Contributors
+    * All rights reserved.
+    * Redistribution and use in source and binary forms, with or without
+    * modification, are permitted provided that the following conditions are met:
+    *
+    *   - Redistributions of source code must retain the above copyright
+    *     notice, this list of conditions and the following disclaimer.
+    *   - Redistributions in binary form must reproduce the above copyright
+    *     notice, this list of conditions and the following disclaimer in the
+    *     documentation and/or other materials provided with the distribution.
+    *
+    * THIS SOFTWARE IS PROVIDED BY THE HAXE PROJECT CONTRIBUTORS "AS IS" AND ANY
+    * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+    * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+    * DISCLAIMED. IN NO EVENT SHALL THE HAXE PROJECT CONTRIBUTORS BE LIABLE FOR
+    * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+    * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+    * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+    * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+    * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+    * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH
+    * DAMAGE.
+    */
+    private function generate1ByteData(width: Int, height: Int, data: Bytes): Bytes {
         // stolen from format.png.tools.buildGrey()
-        // TODO: make this generic for any color scheme
         var fdat = haxe.io.Bytes.alloc(width * height + height);
         var w = 0, r = 0;
 		for( y in 0...height ) {
@@ -92,8 +134,7 @@ class Apng {
 			for( x in 0...width )
 				fdat.set(w++,data.get(r++));
 		}
-        // fdat.setInt32BE(0, seqNum++);
-        chunks.add(generateFdat(seqNum++, fdat, compLvl));
+        return fdat;
     }
 
     public function finalize(): Data {
