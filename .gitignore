@@ -1,4 +1,8 @@
 .haxelib
 build/
 *.n
-output.png
+
+*.png
+*.mkv
+*.mp4
+!examples/*

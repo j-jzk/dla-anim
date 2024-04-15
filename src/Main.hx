@@ -57,7 +57,6 @@ class MainConfig extends CommandLine {
             for (x in 0...head.width) {
                 final pixel = data.getInt32(4*(y*head.width + x));
                 if (pixel != 0 && pixel != 0xff000000) {
-                    trace('start pixel at ${new Point(x, y)}: $pixel');
                     startPts.add(new Point(x, y));
                 }
             }
