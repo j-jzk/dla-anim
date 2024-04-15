@@ -2,5 +2,6 @@
 -m Main
 -L format
 -L hxColorToolkit
+-L mcli
 # --neko main.n
 --cpp build/

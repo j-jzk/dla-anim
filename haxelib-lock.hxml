@@ -1,3 +1,4 @@
 -lib format:3.7.0
 -lib hxcpp:4.3.2
--lib hcColorToolkit:git:https://github.com/andyli/hxColorToolkit.git#3f55f7b95d4762c2c1ac9ea842727ee614c82b6e
+-lib hxColorToolkit:git:https://github.com/andyli/hxColorToolkit.git#3f55f7b95d4762c2c1ac9ea842727ee614c82b6e
+-lib mcli:0.1.7
